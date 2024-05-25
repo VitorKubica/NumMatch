@@ -1,112 +1,117 @@
-import Image from "next/image";
+'use client'
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Check, Search } from 'lucide-react';
+import Image from 'next/image';
+import { useState } from 'react';
 
 export default function Home() {
+  const [columnValues, setColumnValues] = useState<string>('');
+  const [targetNumber, setTargetNumber] = useState<string>('0');
+  const [combinations, setCombinations] = useState<number[][]>([]);
+  const [exactMatch, setExactMatch] = useState<boolean>(false);
+  const [noMatches, setNoMatches] = useState<boolean>(false);
+
+  const handleColumnChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setColumnValues(event.target.value);
+  };
+
+  const handleTargetNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = event.target.value.replace(/,/g, '.');
+    setTargetNumber(formattedValue);
+  };
+
+  const findCombinations = () => {
+    const values = columnValues.split('\n').map(value => parseFloat(value.replace(/,/g, '.')));
+    const target = parseFloat(targetNumber);
+    const foundCombinations: number[][] = [];
+
+    const findSums = (nums: number[], target: number, partial: number[] = []) => {
+      const sum = partial.reduce((a, b) => a + b, 0);
+      if (sum === target && partial.length > 0) {
+        foundCombinations.push(partial);
+      }
+      if (sum >= target) {
+        return; // if we reach the number return
+      }
+      for (let i = 0; i < nums.length; i++) {
+        const n = nums[i];
+        const remaining = nums.slice(i + 1);
+        findSums(remaining, target, partial.concat([n]));
+      }
+    };
+
+    // Verificando se o valor exato está presente
+    if (values.includes(target)) {
+      setExactMatch(true);
+      setNoMatches(false);
+      setCombinations([]);
+      return;
+    } else {
+      setExactMatch(false);
+    }
+
+    findSums(values, target);
+
+    if (foundCombinations.length > 0) {
+      setCombinations(foundCombinations);
+      setNoMatches(false);
+    } else {
+      setNoMatches(true);
+    }
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+    <main className="bg-white h-full bg-banner-inicial bg-cover flex justify-center">
+      <div className="flex flex-col justify-center items-center bg-white w-[520px] my-10 pb-5 rounded-xl bg-opacity-95">
+        <Image src="/logo.webp" alt="" width={140} height={200}/>
+        <div className='bg-yellow-400 flex flex-col justify-center items-center px-2 py-8 rounded-xl w-[470px]'>
+          <h1 className='text-black font-medium text-xl px-10 font-sans mb-1 text-center'>Cole a coluna de valores na caixa de texto abaixo!</h1>
+          <p className='text-red-400 mb-6 font-semibold text-xs'>lembre de apenas colocar números!</p>
+          <div className='flex flex-col w-[300px]'>
+          <div className='flex flex-col mb-2'>
+            <label htmlFor="Valores" className='text-black'>Valor Vindi</label>
+            <Textarea
+              placeholder="Cole a coluna de valores aqui..."
+              className='text-black'
+              value={columnValues}
+              onChange={handleColumnChange}
             />
-          </a>
+          </div>
+          <div className='flex flex-col mb-6'>
+            <label htmlFor="Valores" className='text-black'>Valor Banco</label>
+            <Input
+              type="text"
+              placeholder="Digite o número alvo..."
+              className='text-black'
+              value={targetNumber}
+              onChange={handleTargetNumberChange}
+            />
+          </div>
+          <Button variant={'secondary'} onClick={findCombinations} className='flex justify-center'>
+            <Search width={14} className='mr-1'/> Encontrar
+          </Button>
+          <div className='mt-4 w-48'>
+            <p className='text-left w-full text-yellow-950 font-semibold text-xl'>Combinações:</p>
+            {exactMatch && (
+              <p className='font-semibold flex text-green-500'>
+                <Check width={16} className='mr-1'/> Valor exato encontrado!
+              </p>
+            )}
+            {combinations.slice(0, 3).map((combination, index) => (
+              <p key={index} className='font-semibold flex'>
+                <Check width={16} className='mr-1'/>{combination.join(' , ')}
+              </p>
+            ))}
+            {noMatches && (
+              <p className='text-red-500 font-semibold'>
+                Nenhum valor ou combinação encontrada.
+              </p>
+            )}
+          </div>
+          </div>
         </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
       </div>
     </main>
   );
